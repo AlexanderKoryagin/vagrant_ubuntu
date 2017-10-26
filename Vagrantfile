@@ -1,8 +1,9 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-dir = Dir.pwd
-vagrant_dir = File.expand_path(File.dirname(__FILE__))
+unless Vagrant.has_plugin?("vagrant-disksize")
+  raise 'Vagrant vagrant-disksize is not installed!'
+end
 
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
@@ -13,22 +14,13 @@ Vagrant.configure("2") do |config|
   # For a complete reference, please see the online documentation at
   # https://docs.vagrantup.com.
 
-#  config.ssh.username = "ubuntu"
-#  config.ssh.password = "ubuntu"
-
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
-  config.vm.box = "ubuntu/xenial64"
-  # Ubuntu Server 16.04 LTS (Xenial Xerus)
-  # config.vm.box_url = "http://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-vagrant.box"
-
-  # Disable automatic box update checking. If you disable this, then
-  # boxes will only be checked for updates when the user runs
-  # `vagrant box outdated`. This is not recommended.
-  # config.vm.box_check_update = false
+  config.vm.box = "ubuntu/xenial64"  # Ubuntu Server 16.04 LTS (Xenial Xerus)
+  config.disksize.size = '90GB'
 
   # The hostname the machine should have.
-  config.vm.hostname = "ubuntu"
+  config.vm.hostname = "vbox"
 
   # Create a forwarded port mapping which allows access to a specific port
   # within the machine from a port on the host machine. In the example below,
@@ -56,59 +48,32 @@ Vagrant.configure("2") do |config|
   # argument is a set of non-required options.
   # config.vm.synced_folder "../data", "/vagrant_data"
 
-  # Provider-specific configuration so you can fine-tune various
-  # backing providers for Vagrant. These expose provider-specific options.
-  # Example for VirtualBox:
-  #
-  # config.vm.provider "virtualbox" do |vb|
-  #   # Display the VirtualBox GUI when booting the machine
-  #   vb.gui = true
-  #
-  #   # Customize the amount of memory on the VM:
-  #   vb.memory = "1024"
-  # end
-  #
-  # View the documentation for the provider you are using for more
-  # information on available options.
-
   # https://www.vagrantup.com/docs/virtualbox/configuration.html
   # https://www.virtualbox.org/manual/ch08.html#vboxmanage-modifyvm
   config.vm.provider "virtualbox" do |vbox|
     vbox.name = "ubuntu_16_04_lts"
     vbox.gui = true
-    vbox.memory = 6144
+    vbox.memory = 6 * 1024
     vbox.cpus = 2
     vbox.customize ["modifyvm", :id, "--ostype", "Ubuntu_64"]
     vbox.customize ["modifyvm", :id, "--vram", 32]
     vbox.customize ["modifyvm", :id, "--nic1", "nat"]
-    #vbox.customize ["modifyvm", :id, "--nic2", "bridged"]
     vbox.customize ["modifyvm", :id, "--clipboard", "bidirectional"]
     vbox.customize ["modifyvm", :id, "--draganddrop", "disabled"]
   end
 
-  config.vm.provision "shell", path: "post_deploy.sh"
+  config.vm.provision "shell", path: "provisioning/post_deploy.sh"
+  config.vm.provision "shell", inline: "timedatectl set-timezone Europe/Moscow"
+  config.vm.provision "shell", inline: "apt-get -y autoremove && apt-get -y autoclean"
+  config.vm.provision "shell", inline: "echo 'ubuntu:su' | chpasswd"
   config.vm.provision "shell", inline: "reboot"
-
-#  config.vm.provision "shell", path: "post_deploy_2.sh"
-
-#  if File.exists?(File.join(vagrant_dir,'post_deploy.sh')) then
-#    config.vm.provision :shell, :path => File.join( "post_deploy.sh" )
-#  end
-
-#  config.vm.provision "shell", inline: <<-SHELL
-#    reboot
-#  SHELL
-
-#  if File.exists?(File.join(vagrant_dir,'post_deploy.sh')) then
-#    config.vm.provision :shell, :path => File.join( "post_deploy.sh" )
-#  end
 
   # Enable provisioning with a shell script. Additional provisioners such as
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
-#  config.vm.provision "shell", inline: <<-SHELL
-#    apt-get update && apt-get -y upgrade && apt-get -y autoremove
-#    apt-get install -y ubuntu-desktop
-#  SHELL
+  # config.vm.provision "shell", inline: <<-SHELL
+  #   apt-get update && apt-get -y upgrade && apt-get -y autoremove
+  #   apt-get install -y ubuntu-desktop
+  # SHELL
 
 end

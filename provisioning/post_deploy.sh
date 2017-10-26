@@ -3,9 +3,8 @@ set -x
 set -u
 
 export proxy="http://192.168.50.77:8080/"
-export noproxy=""
+export noproxy="localhost,127.0.0.1,.cyco.io,.artifactory.cyco.io,docker-dev.artifactory.cyco.io"
 export pycharm_ver='2017.2.3'  # https://www.jetbrains.com/pycharm/download/
-export new_pwd="su"
 
 # ------------------------------------------------------------------------- #
 export http_proxy=${proxy}
@@ -35,9 +34,24 @@ apt-get update &&
     apt-get -y autoremove &&
     apt-get -y autoclean ;
 
+# Common
+apt-get install -y apt-transport-https ca-certificates curl software-properties-common
 
 # Install Ubuntu desktop
 apt-get install -y ubuntu-desktop
+
+
+# Base Soft
+apt-get install -y python-pip python-dev build-essential
+apt-get install -y git gitk vim gedit tree
+apt-get install -y network-manager-openvpn network-manager-openvpn-gnome openvpn  # vpn
+apt-get install -y python-protobuf libprotobuf-dev protobuf-compiler              # protobuf
+
+
+# PIP
+pip install -U pip
+pip install -U setuptools
+pip install -U IPython ipdb virtualenv pylint
 
 
 # Install VBoxGuestAdditions
@@ -46,7 +60,7 @@ wget http://download.virtualbox.org/virtualbox/${last_ver}/VBoxGuestAdditions_${
 mkdir /media/iso
 mount VBoxGuestAdditions_${last_ver}.iso /media/iso
 cd /media/iso
-yes | sudo ./VBoxLinuxAdditions.run --nox11
+yes | ./VBoxLinuxAdditions.run --nox11
 
 
 # Install Pycharm
@@ -56,8 +70,14 @@ tar xfz /tmp/pycharm.tar.gz -C /opt
 ln -s "/opt/pycharm-community-${pycharm_ver}/bin/pycharm.sh" /usr/bin/pycharm
 
 
+# Sublime text
+wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | apt-key add -
+echo "deb https://download.sublimetext.com/ apt/stable/" | tee /etc/apt/sources.list.d/sublime-text.list
+apt-get update
+apt-get -y install sublime-text
+
+
 # Docker
-apt-get install -y apt-transport-https ca-certificates curl software-properties-common
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 apt-key fingerprint 0EBFCD88   
 add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
@@ -75,28 +95,13 @@ echo "Environment=\"https_proxy=${proxy}\"" >> /etc/systemd/system/docker.servic
 echo "Environment=\"NO_PROXY=${noproxy}\""  >> /etc/systemd/system/docker.service.d/http-proxy.conf
 echo "Environment=\"no_proxy=${noproxy}\""  >> /etc/systemd/system/docker.service.d/http-proxy.conf
 systemctl daemon-reload && sudo systemctl restart docker
-
 docker run hello-world
 
 
-# Base Soft
-apt-get install -y python-pip python-dev build-essential
-apt-get install -y git vim gedit tree -y
-pip install -U pip
-pip install -U setuptools
-pip install -U IPython ipdb virtualenv pylint
+# Generate SSH keys
+su - ubuntu -c "ssh-keygen -t rsa -b 4096 -f '/home/ubuntu/.ssh/id_rsa' -P '' -C 'ubuntu'"
 
 
 # Other
-echo "alias ll='ls -alFh'" >> ~/.bashrc
-
-
-# Change Password
-echo "ubuntu:${new_pwd}"| sudo chpasswd
-
-
-
-
-
-
+echo "alias ll='ls -alFh'" >> /home/ubuntu/.bashrc
 
